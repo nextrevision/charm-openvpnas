@@ -1,0 +1,73 @@
+#!/bin/bash
+
+. hooks/common.sh
+
+juju-log "Retrieving user settings"
+
+hostname=`config-get fqdn`
+password=`config-get password`
+port=`config-get port`
+route_gw=`config-get reroute-gateway`
+route_dns=`config-get reroute-dns`
+network=`config-get client-network`
+license=`config-get license`
+
+juju-log "Validating user settings"
+
+# Convert boolean values to lowercase
+route_gw=${route_gw,,}
+route_dns=${route_dns,,}
+# Parse network settings
+cidr=`echo $network | cut -d'/' -f2`
+network=`echo $network | cut -d'/' -f1`
+# Provide defaults
+[ -n "${cidr}" ] || cidr=24
+[ -n "${hostname}" ] || hostname=`unit-get public-address`
+
+juju-log "Enforcing port ${port}"
+
+update_config "cs.https.port" $port
+update_config "admin_ui.https.port" $port
+update_config "vpn.server.daemon.tcp.port" $port
+
+juju-log "Enforcing hostname ${hostname}"
+
+update_config "host.name" $hostname
+
+juju-log "Enforcing network settings"
+
+update_config "vpn.daemon.0.client.network" $network
+update_config "vpn.daemon.0.client.netmask_bits" $cidr
+update_config "vpn.client.routing.reroute_gw" $route_gw
+update_config "vpn.client.routing.reroute_dns" $route_dns
+
+juju-log "Enforcing admin password"
+
+$SCRIPT_DIR/ovpnpasswd -u openvpn -p "${password}"
+
+# Check to see if a license was given
+# If it differs from the previous, then activate it
+if [ -n "${license}" ]; then
+  if [[ $PRIOR_LICENSE != $license ]]; then
+    $SCRIPT_DIR/liman activate $license
+  fi
+fi
+
+# Check if user updated the port
+# If so, close the previous port and open the new
+# Also ensure VPN data port 1194 is open
+if [[ $PRIOR_PORT != $port ]]; then
+  juju-log "Closing port ${PRIOR_PORT} and opening port ${port}"
+  [ -z "${PRIOR_PORT}" ] || close-port $PRIOR_PORT/tcp
+  open-port $port/tcp
+  open-port 1194/udp
+fi
+
+juju-log "Writing local persistent config"
+
+write_settings
+
+juju-log "Restarting OpenVPN-AS"
+
+hooks/stop
+hooks/start

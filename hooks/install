@@ -1,0 +1,31 @@
+#!/bin/bash
+# Here do anything needed to install the service
+# i.e. apt-get install -y foo  or  bzr branch http://myserver/mycode /srv/webroot
+# Make sure this hook exits cleanly and is idempotent, common problems here are failing to account for a debconf question on a dependency, or trying to pull from github without installing git first.
+
+LURL="http://swupdate.openvpn.org/as/openvpn-as-1.8.5-Ubuntu12.amd_64.deb"
+LHASH="e953fc05ad37bcfa2b01c6ba6cca0d36"
+
+juju-log "Downloading required components"
+
+add-apt-repository -y ppa:charmers/charm-helpers
+apt-get update
+apt-get install -qqy charm-helper-sh
+
+juju-log "Downloading OpenVPN-AS installer"
+
+. /usr/share/charm-helper/sh/net.sh
+source_file=`ch_get_file $LURL $LHASH`
+
+juju-log "Installing via dpkg"
+
+dpkg -i $source_file
+
+juju-log "Performing initial configuration"
+
+/usr/local/openvpn_as/bin/ovpn-init --force --batch
+
+juju-log "Restarting OpenVPN service"
+
+hooks/stop
+hooks/start

@@ -1,0 +1,32 @@
+options:
+  fqdn:
+    type: string
+    description: FQDN of the server, defaults to unit's private address
+  port:
+    type: int
+    default: 443
+    description: port to run the web UI over (includes admin UI)
+  password:
+    type: string
+    default: openvpn-as
+    description: password for the admin user 'openvpn'
+  reroute-gateway:
+    type: boolean
+    default: True
+    description: reroutes all client traffic through the established VPN tunnel
+  reroute-dns:
+    type: boolean
+    default: True
+    description: reroutes all DNS traffic through the established VPN tunnel
+  client-network:
+    type: string
+    default: "5.5.0.0/20"
+    description: |
+        network to use for client addressing;
+        must include a cidr suffix, i.e. X.X.X.X/XX
+  license:
+    type: string
+    description: |
+        optional license key acquired from openvpn.net to allow for greater than two clients
+        see https://openvpn.net/index.php/access-server/license-key.html for more details
+

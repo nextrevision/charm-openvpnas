@@ -1,0 +1,10 @@
+name: openvpn-as
+summary: <Fill in summary here>
+maintainer: John Patterson <John Patterson@peken>
+description: |
+  <Multi-line description here>
+categories:
+  - application
+provides:
+  relation-name:
+    interface: http

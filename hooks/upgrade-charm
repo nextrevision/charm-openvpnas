@@ -1,0 +1,31 @@
+#!/bin/bash
+
+. hooks/common.sh
+
+juju-log "Upgrading OpenVPN-AS"
+
+juju-log "Stopping OpenVPN-AS"
+
+hooks/stop
+
+juju-log "Backing up settings"
+
+$SCRIPT_DIR/confdba --save -f /tmp/openvpn-as-db-save.json
+
+juju-log "Performing upgrade"
+
+hooks/install
+
+juju-log "Loading user settings"
+
+$SCRIPT_DIR/confdba --load -f /tmp/openvpn-as-db-save.json
+rm /tmp/openvpn-as-db-save.json
+
+juju-log "Running config-changed hook"
+
+hooks/config-changed
+
+juju-log "Upgrade complete: restarting OpenVPN-AS"
+
+hooks/stop
+hooks/start
