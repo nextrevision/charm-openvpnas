@@ -1,0 +1,6 @@
+#!/bin/sh
+
+public_address=`unit-get public-address`
+port=`config-get port`
+
+relation-set port=${port} hostname=${public_address}

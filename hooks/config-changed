@@ -1,4 +1,12 @@
 #!/bin/bash
+# The layout of this file can be summarized by the following:
+#   1) Import common variables and functions
+#   2) Retrieve user settings set by Juju
+#   3) Ensure the user settings are valid and will not cause any issues
+#   4) Set the port, hostname, network, password, and license settings
+#   5) If the port changed, open the new port and close the previous
+#   6) Write the '.settings' persistence file for comparing user values
+#   7) Restart the OpenVPN-AS service
 
 . hooks/common.sh
 
@@ -26,8 +34,6 @@ network=`echo $network | cut -d'/' -f1`
 
 juju-log "Enforcing port ${port}"
 
-update_config "cs.https.port" $port
-update_config "admin_ui.https.port" $port
 update_config "vpn.server.daemon.tcp.port" $port
 
 juju-log "Enforcing hostname ${hostname}"
@@ -41,14 +47,20 @@ update_config "vpn.daemon.0.client.netmask_bits" $cidr
 update_config "vpn.client.routing.reroute_gw" $route_gw
 update_config "vpn.client.routing.reroute_dns" $route_dns
 
-juju-log "Enforcing admin password"
-
-$SCRIPT_DIR/ovpnpasswd -u openvpn -p "${password}"
+# If the openvpn user exists, then change the password
+# The conditional statement is added in case the user
+#   changes from the default PAM authentication method
+#   and to something like LDAP.
+if `grep -q openvpn /etc/passwd`; then
+  juju-log "Enforcing admin password"
+  $SCRIPT_DIR/ovpnpasswd -u openvpn -p "${password}"
+fi
 
 # Check to see if a license was given
 # If it differs from the previous, then activate it
 if [ -n "${license}" ]; then
   if [[ $PRIOR_LICENSE != $license ]]; then
+    juju-log "Activate license"
     $SCRIPT_DIR/liman activate $license
   fi
 fi
