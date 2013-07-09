@@ -36,6 +36,10 @@ the default.
 
 # Connecting to the VPN
 
+The easiest way to establish a connection to the VPN is to authenticate via
+the login page at https://ip-address-or-fqdn. This will give access to client
+packages and config files needed for client connections.
+
 ## Basic Linux Client Usage
 
 To connect to the VPN using a Linux distribution, the openvpn package is
@@ -77,7 +81,7 @@ default user's home directory. Now copy the certificate to your computer for
 redistribution and delete the original file:
 
     juju scp 1:~/johndoe-openvpn.tgz .
-    juju ssh 1 && sudo rm johndoe_client.tgz && exit
+    juju ssh 1 "sudo rm johndoe_client.tgz && exit"
     
 For instructions on how to import the downloaded files into NetworkManager,
 reference the following article: http://bit.ly/15dVReF
